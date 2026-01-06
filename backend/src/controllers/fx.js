@@ -1,4 +1,5 @@
 const fxService = require('../services/fx');
+const { toSafeErrorString } = require('../utils/secrets');
 
 class FxController {
   /**
@@ -28,6 +29,9 @@ class FxController {
 
       return res.status(200).json(result.payload);
     } catch (err) {
+      // Log safely (never leak provider keys).
+      console.error(`[fx] /api/fx/latest failed: ${toSafeErrorString(err)}`);
+
       // Missing key is a server config issue; we still return a friendly message.
       if (err && err.code === 'MISSING_API_KEY') {
         return res.status(500).json({

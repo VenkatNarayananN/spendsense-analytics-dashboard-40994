@@ -102,8 +102,10 @@ function clearCache() {
  * @returns {Promise<{ base: string, timestamp: number, rates: Record<string, number> }>}
  */
 async function fetchLatestRates(base) {
+  // IMPORTANT: This API key must only ever be read on the server.
   const apiKey = process.env.OPEN_EXCHANGE_RATES_API_KEY;
   if (!apiKey) {
+    // Do not include the key value in any errors/logs.
     const err = new Error('Missing required environment variable OPEN_EXCHANGE_RATES_API_KEY.');
     err.code = 'MISSING_API_KEY';
     throw err;
@@ -124,7 +126,16 @@ async function fetchLatestRates(base) {
     const err = new Error(`Open Exchange Rates upstream error: HTTP ${response.status}`);
     err.code = 'UPSTREAM_HTTP_ERROR';
     err.status = response.status;
-    err.upstreamBody = bodyText;
+
+    // Keep upstream body for debugging, but never allow it to leak secrets.
+    // (OXR shouldn't echo app_id, but we redact defensively.)
+    try {
+      const { redactOpenExchangeRatesKey } = require('../utils/secrets');
+      err.upstreamBody = redactOpenExchangeRatesKey(bodyText);
+    } catch {
+      err.upstreamBody = '';
+    }
+
     throw err;
   }
 
