@@ -1,11 +1,13 @@
 const express = require('express');
 const healthController = require('../controllers/health');
 const fxController = require('../controllers/fx');
+const { requireSupabaseAuth } = require('../middleware');
 
 const router = express.Router();
-// Health endpoint
 
 /**
+ * Public health endpoint kept for backward compatibility.
+ *
  * @swagger
  * /:
  *   get:
@@ -34,6 +36,43 @@ const router = express.Router();
 router.get('/', healthController.check.bind(healthController));
 
 /**
+ * Public health endpoint at /api/health (explicitly excluded from auth).
+ *
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: API health endpoint
+ *     description: Public health check endpoint (no authentication required).
+ *     responses:
+ *       200:
+ *         description: Service health check passed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ *                 message:
+ *                   type: string
+ *                   example: Service is healthy
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 environment:
+ *                   type: string
+ *                   example: development
+ */
+router.get('/api/health', healthController.check.bind(healthController));
+
+// Enforce authentication for all remaining /api routes (health excluded above).
+router.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  return requireSupabaseAuth()(req, res, next);
+});
+
+/**
  * @swagger
  * /api/fx/latest:
  *   get:
@@ -42,6 +81,8 @@ router.get('/', healthController.check.bind(healthController));
  *       Fetches latest exchange rates from Open Exchange Rates using the server-side
  *       environment variable OPEN_EXCHANGE_RATES_API_KEY. The response is normalized to
  *       `{ base, timestamp, rates }`.
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: base
@@ -86,6 +127,19 @@ router.get('/', healthController.check.bind(healthController));
  *                 message:
  *                   type: string
  *                   example: Query param "base" must be a 3-letter ISO currency code (e.g., USD).
+ *       401:
+ *         description: Missing or invalid session
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Invalid or expired session.
  *       502:
  *         description: Upstream provider error
  *         content:
