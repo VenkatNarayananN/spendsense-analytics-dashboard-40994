@@ -75,18 +75,25 @@ describe('GET /api/fx/latest caching', () => {
     Date.now = realNow;
   });
 
-  test('returns 502 when upstream fails and no cache exists', async () => {
+  test('returns 502 when upstream fails and no cache exists (standardized error JSON, no secret leakage)', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 502,
-      text: async () => 'bad gateway',
+      text: async () => `bad gateway app_id=${process.env.OPEN_EXCHANGE_RATES_API_KEY}`,
     });
 
     const res = await request(app).get('/api/fx/latest?base=USD');
     expect(res.status).toBe(502);
-    expect(res.body).toEqual({
-      status: 'error',
-      message: 'Unable to fetch exchange rates right now. Please try again later.',
-    });
+
+    expect(res.body).toHaveProperty('success', false);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toHaveProperty('code');
+    expect(res.body.error).toHaveProperty(
+      'message',
+      'Unable to fetch exchange rates right now. Please try again later.'
+    );
+
+    // Ensure the API key is not leaked anywhere in the error payload.
+    expect(JSON.stringify(res.body)).not.toContain(process.env.OPEN_EXCHANGE_RATES_API_KEY);
   });
 });

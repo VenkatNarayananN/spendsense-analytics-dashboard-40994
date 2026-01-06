@@ -102,6 +102,9 @@ function clearCache() {
  * @returns {Promise<{ base: string, timestamp: number, rates: Record<string, number> }>}
  */
 async function fetchLatestRates(base) {
+  const { ExternalApiError } = require('../errors/AppError');
+  const { redactOpenExchangeRatesKey } = require('../utils/secrets');
+
   // IMPORTANT: This API key must only ever be read on the server.
   const apiKey = process.env.OPEN_EXCHANGE_RATES_API_KEY;
   if (!apiKey) {
@@ -116,27 +119,34 @@ async function fetchLatestRates(base) {
   const url = new URL(`${OPEN_EXCHANGE_RATES_BASE_URL}/latest.json`);
   url.searchParams.set('app_id', apiKey);
 
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-  });
+  let response;
+  try {
+    response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+  } catch (cause) {
+    // Network/DNS/timeouts etc => treat as upstream failure.
+    throw new ExternalApiError({
+      service: 'openexchangerates',
+      message: 'Unable to fetch exchange rates right now. Please try again later.',
+      upstreamStatus: undefined,
+      upstreamBody: undefined,
+      code: 'OXR_FETCH_FAILED',
+    });
+  }
 
   if (!response.ok) {
     const bodyText = await response.text().catch(() => '');
-    const err = new Error(`Open Exchange Rates upstream error: HTTP ${response.status}`);
-    err.code = 'UPSTREAM_HTTP_ERROR';
-    err.status = response.status;
+    const safeBody = redactOpenExchangeRatesKey(bodyText);
 
-    // Keep upstream body for debugging, but never allow it to leak secrets.
-    // (OXR shouldn't echo app_id, but we redact defensively.)
-    try {
-      const { redactOpenExchangeRatesKey } = require('../utils/secrets');
-      err.upstreamBody = redactOpenExchangeRatesKey(bodyText);
-    } catch {
-      err.upstreamBody = '';
-    }
-
-    throw err;
+    throw new ExternalApiError({
+      service: 'openexchangerates',
+      message: 'Unable to fetch exchange rates right now. Please try again later.',
+      upstreamStatus: response.status,
+      upstreamBody: safeBody || undefined,
+      code: 'OXR_UPSTREAM_ERROR',
+    });
   }
 
   const data = await response.json();

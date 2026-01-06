@@ -18,6 +18,25 @@ const options = {
             'Supabase session access token. Send as: Authorization: Bearer <access_token>',
         },
       },
+      schemas: {
+        ErrorResponse: {
+          type: 'object',
+          required: ['success', 'error'],
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: {
+              type: 'object',
+              required: ['code', 'message'],
+              properties: {
+                code: { type: 'string', example: 'EXTERNAL_API_ERROR' },
+                message: { type: 'string', example: 'Unable to fetch exchange rates right now. Please try again later.' },
+                details: { description: 'Optional safe details (non-secret).', nullable: true },
+                cause: { description: 'Optional sanitized cause (non-secret).', nullable: true },
+              },
+            },
+          },
+        },
+      },
     },
   },
   apis: ['./src/routes/*.js'], // Path to the API docs

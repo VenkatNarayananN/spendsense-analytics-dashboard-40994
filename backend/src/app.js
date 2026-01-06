@@ -3,6 +3,8 @@ const express = require('express');
 const routes = require('./routes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('../swagger');
+const { errorHandler } = require('./middleware');
+const { NotFoundError } = require('./errors/AppError');
 
 // Initialize express app
 const app = express();
@@ -44,13 +46,17 @@ app.use(express.json());
 // Mount routes
 app.use('/', routes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Internal Server Error',
-  });
+// 404 handler (must come after all routes)
+app.use((req, res, next) => {
+  return next(
+    new NotFoundError('Route not found.', {
+      method: req.method,
+      path: req.originalUrl,
+    })
+  );
 });
+
+// Centralized error handler (must be last)
+app.use(errorHandler);
 
 module.exports = app;

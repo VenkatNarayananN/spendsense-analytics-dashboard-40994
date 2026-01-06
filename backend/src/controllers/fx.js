@@ -1,5 +1,6 @@
 const fxService = require('../services/fx');
 const { toSafeErrorString } = require('../utils/secrets');
+const { ValidationError, AppError } = require('../errors/AppError');
 
 class FxController {
   /**
@@ -10,14 +11,14 @@ class FxController {
    * Adds caching headers:
    * - X-Cache: hit|miss|stale
    * - Cache-Control: public, max-age=60
+   *
+   * Error shape:
+   * `{ success: false, error: { code, message, details?, cause? } }`
    */
-  async latest(req, res) {
+  async latest(req, res, next) {
     const validation = fxService.validateBase(req.query.base);
     if (!validation.ok) {
-      return res.status(400).json({
-        status: 'error',
-        message: validation.message,
-      });
+      return next(new ValidationError(validation.message));
     }
 
     try {
@@ -34,17 +35,17 @@ class FxController {
 
       // Missing key is a server config issue; we still return a friendly message.
       if (err && err.code === 'MISSING_API_KEY') {
-        return res.status(500).json({
-          status: 'error',
-          message: 'Server is missing FX provider credentials. Please contact support.',
-        });
+        return next(
+          new AppError(
+            'MISSING_API_KEY',
+            'Server is missing FX provider credentials. Please contact support.',
+            500
+          )
+        );
       }
 
-      // Upstream/provider failures => 502
-      return res.status(502).json({
-        status: 'error',
-        message: 'Unable to fetch exchange rates right now. Please try again later.',
-      });
+      // ExternalApiError and other AppError instances will be normalized by middleware.
+      return next(err);
     }
   }
 }

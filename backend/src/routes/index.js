@@ -119,40 +119,19 @@ router.use('/api', (req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Query param "base" must be a 3-letter ISO currency code (e.g., USD).
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Missing or invalid session
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Invalid or expired session.
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       502:
  *         description: Upstream provider error
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Unable to fetch exchange rates right now. Please try again later.
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/api/fx/latest', fxController.latest.bind(fxController));
 
