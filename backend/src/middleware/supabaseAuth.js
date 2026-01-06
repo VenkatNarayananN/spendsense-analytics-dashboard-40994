@@ -2,6 +2,7 @@
 
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
+const { AppError } = require('../errors/AppError');
 
 /**
  * Extracts a bearer token from the Authorization header.
@@ -84,18 +85,20 @@ function requireSupabaseAuth() {
    */
   return function requireSupabaseAuthMiddleware(req, res, next) {
     if (!supabaseUrl || !client) {
-      return res.status(500).json({
-        status: 'error',
-        message: 'Server authentication is not configured.',
-      });
+      return next(
+        new AppError(
+          'AUTH_NOT_CONFIGURED',
+          'Server authentication is not configured.',
+          500
+        )
+      );
     }
 
     const token = _getBearerToken(req);
     if (!token) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Missing Authorization header (expected Bearer token).',
-      });
+      return next(
+        new AppError('UNAUTHORIZED', 'Authentication required', 401)
+      );
     }
 
     /**
@@ -138,10 +141,9 @@ function requireSupabaseAuth() {
       (err, decoded) => {
         if (err) {
           // Do not leak token / internals
-          return res.status(401).json({
-            status: 'error',
-            message: 'Invalid or expired session.',
-          });
+          return next(
+            new AppError('UNAUTHORIZED', 'Authentication required', 401)
+          );
         }
 
         // Attach user claims for downstream handlers if needed.

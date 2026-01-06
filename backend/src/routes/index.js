@@ -80,7 +80,7 @@ router.use('/api', (req, res, next) => {
  *     description: >
  *       Fetches latest exchange rates from Open Exchange Rates using the server-side
  *       environment variable OPEN_EXCHANGE_RATES_API_KEY. The response is normalized to
- *       `{ base, timestamp, rates }`.
+ *       "{ base, timestamp, rates }".
  *     security:
  *       - bearerAuth: []
  *     parameters:

@@ -23,12 +23,16 @@ describe('GET /api/fx/latest should not leak provider API key', () => {
       }),
     });
 
-    const first = await request(app).get('/api/fx/latest?base=USD');
+    const first = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(first.status).toBe(200);
     expect(first.headers['x-cache']).toBe('miss');
     expect(JSON.stringify(first.body)).not.toContain(process.env.OPEN_EXCHANGE_RATES_API_KEY);
 
-    const second = await request(app).get('/api/fx/latest?base=USD');
+    const second = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(second.status).toBe(200);
     expect(second.headers['x-cache']).toBe('hit');
     expect(JSON.stringify(second.body)).not.toContain(process.env.OPEN_EXCHANGE_RATES_API_KEY);

@@ -24,14 +24,18 @@ describe('GET /api/fx/latest caching', () => {
       }),
     });
 
-    const first = await request(app).get('/api/fx/latest?base=USD');
+    const first = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(first.status).toBe(200);
     expect(first.headers['x-cache']).toBe('miss');
     expect(first.headers['cache-control']).toBe('public, max-age=60');
     expect(first.body).toHaveProperty('base', 'USD');
     expect(global.fetch).toHaveBeenCalledTimes(1);
 
-    const second = await request(app).get('/api/fx/latest?base=USD');
+    const second = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(second.status).toBe(200);
     expect(second.headers['x-cache']).toBe('hit');
     expect(second.headers['cache-control']).toBe('public, max-age=60');
@@ -48,7 +52,9 @@ describe('GET /api/fx/latest caching', () => {
       }),
     });
 
-    const seed = await request(app).get('/api/fx/latest?base=USD');
+    const seed = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(seed.status).toBe(200);
     expect(seed.headers['x-cache']).toBe('miss');
 
@@ -65,7 +71,9 @@ describe('GET /api/fx/latest caching', () => {
       text: async () => 'upstream error',
     });
 
-    const stale = await request(app).get('/api/fx/latest?base=USD');
+    const stale = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(stale.status).toBe(200);
     expect(stale.headers['x-cache']).toBe('stale');
     expect(stale.headers['cache-control']).toBe('public, max-age=60');
@@ -82,7 +90,9 @@ describe('GET /api/fx/latest caching', () => {
       text: async () => `bad gateway app_id=${process.env.OPEN_EXCHANGE_RATES_API_KEY}`,
     });
 
-    const res = await request(app).get('/api/fx/latest?base=USD');
+    const res = await request(app)
+      .get('/api/fx/latest?base=USD')
+      .set('Authorization', 'Bearer test-token');
     expect(res.status).toBe(502);
 
     expect(res.body).toHaveProperty('success', false);
