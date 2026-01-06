@@ -5,6 +5,10 @@ class FxController {
    * PUBLIC_INTERFACE
    * Express handler: GET /api/fx/latest?base=USD
    * Returns normalized FX rates from Open Exchange Rates.
+   *
+   * Adds caching headers:
+   * - X-Cache: hit|miss|stale
+   * - Cache-Control: public, max-age=60
    */
   async latest(req, res) {
     const validation = fxService.validateBase(req.query.base);
@@ -16,8 +20,13 @@ class FxController {
     }
 
     try {
-      const payload = await fxService.fetchLatestRates(validation.base);
-      return res.status(200).json(payload);
+      const result = await fxService.fetchLatestRatesCached(validation.base);
+
+      // Cache headers are always set for successful responses (including stale).
+      res.set('X-Cache', result.cache);
+      res.set('Cache-Control', 'public, max-age=60');
+
+      return res.status(200).json(result.payload);
     } catch (err) {
       // Missing key is a server config issue; we still return a friendly message.
       if (err && err.code === 'MISSING_API_KEY') {
@@ -37,4 +46,3 @@ class FxController {
 }
 
 module.exports = new FxController();
-

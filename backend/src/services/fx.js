@@ -8,6 +8,20 @@ const OPEN_EXCHANGE_RATES_BASE_URL = 'https://openexchangerates.org/api';
 const ALLOWED_BASES = new Set(['USD', 'EUR', 'GBP', 'INR']);
 
 /**
+ * In-memory cache keyed by requested base currency.
+ * This intentionally stays module-scoped (process memory) and uses no external dependencies.
+ *
+ * Shape:
+ *  {
+ *    [base]: { payload: object, cachedAtMs: number }
+ *  }
+ */
+const _latestRatesCacheByBase = Object.create(null);
+
+const LATEST_RATES_CACHE_TTL_SECONDS = 3600;
+const LATEST_RATES_CACHE_TTL_MS = LATEST_RATES_CACHE_TTL_SECONDS * 1000;
+
+/**
  * PUBLIC_INTERFACE
  * Validate/normalize a base currency code.
  * @param {unknown} base Raw base query param.
@@ -36,6 +50,42 @@ function validateBase(base) {
   }
 
   return { ok: true, base: normalized };
+}
+
+/**
+ * Internal helper to read cache entry (if any) for base.
+ * @param {string} base
+ * @returns {{ payload: any, cachedAtMs: number } | null}
+ */
+function _getCacheEntry(base) {
+  const entry = _latestRatesCacheByBase[base];
+  if (!entry || !entry.payload || typeof entry.cachedAtMs !== 'number') {
+    return null;
+  }
+  return entry;
+}
+
+/**
+ * Internal helper to store cache entry.
+ * @param {string} base
+ * @param {any} payload
+ */
+function _setCacheEntry(base, payload) {
+  _latestRatesCacheByBase[base] = {
+    payload,
+    cachedAtMs: Date.now(),
+  };
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * Clears the in-memory cache.
+ * Intended for tests and diagnostic/admin use only.
+ */
+function clearCache() {
+  for (const key of Object.keys(_latestRatesCacheByBase)) {
+    delete _latestRatesCacheByBase[key];
+  }
 }
 
 /**
@@ -127,10 +177,48 @@ async function fetchLatestRates(base) {
   };
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * Cached version of latest-rates fetch. Caches the *full normalized response* per requested base for 3600 seconds.
+ *
+ * Behavior:
+ * - If a valid cached entry exists: return it (cache: "hit")
+ * - If missing/expired cache: fetch upstream, store, return (cache: "miss")
+ * - If upstream fetch fails and stale cache exists: return stale cached payload (cache: "stale")
+ * - If upstream fetch fails and no stale cache exists: throw the upstream error
+ *
+ * @param {string} base ISO 4217 base currency code (validated).
+ * @returns {Promise<{ payload: { base: string, timestamp: number, rates: Record<string, number> }, cache: 'hit'|'miss'|'stale' }>}
+ */
+async function fetchLatestRatesCached(base) {
+  const entry = _getCacheEntry(base);
+  const now = Date.now();
+
+  if (entry) {
+    const ageMs = now - entry.cachedAtMs;
+    if (ageMs >= 0 && ageMs < LATEST_RATES_CACHE_TTL_MS) {
+      return { payload: entry.payload, cache: 'hit' };
+    }
+  }
+
+  try {
+    const payload = await fetchLatestRates(base);
+    _setCacheEntry(base, payload);
+    return { payload, cache: 'miss' };
+  } catch (err) {
+    // Upstream failed; if we have any cached value, allow stale fallback.
+    if (entry) {
+      return { payload: entry.payload, cache: 'stale' };
+    }
+    throw err;
+  }
+}
+
 module.exports = {
   validateBase,
   fetchLatestRates,
+  fetchLatestRatesCached,
+  clearCache,
   ALLOWED_BASES,
   DEFAULT_BASE,
 };
-
