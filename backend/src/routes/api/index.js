@@ -5,6 +5,7 @@ const { requireSupabaseAuth } = require('../../middleware');
 
 const healthApiRoutes = require('./health');
 const fxApiRoutes = require('./fx');
+const dbApiRoutes = require('./db');
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use((req, res, next) => {
 
 // Protected API routes
 router.use('/', fxApiRoutes);
+router.use('/', dbApiRoutes);
 
 module.exports = router;
