@@ -10,6 +10,7 @@ const transactionsApiRoutes = require('./transactions');
 const alertsApiRoutes = require('./alerts');
 const analyticsApiRoutes = require('./analytics');
 const usersApiRoutes = require('./users');
+const demoApiRoutes = require('./demo');
 
 const router = express.Router();
 
@@ -33,5 +34,6 @@ router.use('/', transactionsApiRoutes);
 router.use('/', analyticsApiRoutes);
 router.use('/', alertsApiRoutes);
 router.use('/', usersApiRoutes);
+router.use('/', demoApiRoutes);
 
 module.exports = router;

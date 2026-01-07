@@ -18,4 +18,12 @@ describe('Unauthenticated access behavior', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ ok: true, service: 'backend' });
   });
+
+  test('POST /api/demo/seed without Authorization returns 401', async () => {
+    const res = await request(app).post('/api/demo/seed').send({ count: 10 });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty('success', false);
+    expect(res.body.error).toHaveProperty('code', 'UNAUTHORIZED');
+  });
 });
