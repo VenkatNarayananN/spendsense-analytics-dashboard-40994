@@ -1,18 +1,18 @@
 'use strict';
 
 const express = require('express');
-const healthController = require('../controllers/health');
-const apiRoutes = require('./api');
+const healthController = require('../../controllers/health');
 
 const router = express.Router();
 
 /**
- * Public health endpoint kept for backward compatibility.
+ * Public health endpoint at /api/health (explicitly excluded from auth and rate limiting).
  *
  * @swagger
- * /:
+ * /api/health:
  *   get:
- *     summary: Health endpoint
+ *     summary: API health endpoint
+ *     description: Public health check endpoint (no authentication required).
  *     responses:
  *       200:
  *         description: Service health check passed
@@ -34,13 +34,6 @@ const router = express.Router();
  *                   type: string
  *                   example: development
  */
-router.get('/', healthController.check.bind(healthController));
-
-/**
- * Mount all API routes.
- * - /api/health is public
- * - all other /api/* routes require Supabase auth (enforced within ./api)
- */
-router.use('/api', apiRoutes);
+router.get('/health', healthController.check.bind(healthController));
 
 module.exports = router;
