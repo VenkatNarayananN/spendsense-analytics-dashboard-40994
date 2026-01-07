@@ -23,7 +23,7 @@ const router = express.Router();
  *         schema:
  *           type: string
  *           example: USD
- *         description: Base currency (allowed: USD, EUR, GBP, INR). Defaults to USD.
+ *         description: "Base currency (allowed: USD, EUR, GBP, INR). Defaults to USD."
  *     responses:
  *       200:
  *         description: Latest FX rates

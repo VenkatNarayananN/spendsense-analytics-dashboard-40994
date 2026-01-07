@@ -16,6 +16,6 @@ describe('Unauthenticated access behavior', () => {
     const res = await request(app).get('/api/health');
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('status', 'ok');
+    expect(res.body).toMatchObject({ ok: true, service: 'backend' });
   });
 });
