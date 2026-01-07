@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { requireSupabaseAuth } = require('../../middleware');
+const { requireSupabaseAuth, ensureUser } = require('../../middleware');
 
 const healthApiRoutes = require('./health');
 const fxApiRoutes = require('./fx');
@@ -26,6 +26,10 @@ router.use((req, res, next) => {
   if (req.path === '/health') return next();
   return requireSupabaseAuth()(req, res, next);
 });
+
+// Ensure a users row exists for the authenticated subject.
+// This is idempotent and will quickly no-op for returning users.
+router.use(ensureUser());
 
  // Protected API routes
 router.use('/', fxApiRoutes);

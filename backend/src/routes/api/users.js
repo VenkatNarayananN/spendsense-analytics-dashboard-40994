@@ -2,6 +2,7 @@
 
 const express = require('express');
 const usersController = require('../../controllers/users');
+const usersEnsureController = require('../../controllers/usersEnsure');
 
 const router = express.Router();
 
@@ -71,8 +72,37 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *
+ * /api/users/ensure:
+ *   post:
+ *     summary: Ensure user exists (idempotent)
+ *     description: Ensures a DB user row exists for the authenticated Supabase user. Uses trusted JWT claims only (no body).
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User ensured
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [success, data]
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 data:
+ *                   type: object
+ *                   required: [user]
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Missing or invalid session
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.get('/users/me', usersController.me.bind(usersController));
 router.put('/users/me', usersController.updateMe.bind(usersController));
+router.post('/users/ensure', usersEnsureController.ensure.bind(usersEnsureController));
 
 module.exports = router;
