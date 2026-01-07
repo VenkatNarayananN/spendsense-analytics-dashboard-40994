@@ -12,7 +12,7 @@ const router = express.Router();
  * /api/health:
  *   get:
  *     summary: API health endpoint
- *     description: Public health check endpoint (no authentication required).
+ *     description: Public health check endpoint (no authentication required). Not rate-limited.
  *     responses:
  *       200:
  *         description: Service health check passed
@@ -20,19 +20,16 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - ok
+ *                 - service
  *               properties:
- *                 status:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 service:
  *                   type: string
- *                   example: ok
- *                 message:
- *                   type: string
- *                   example: Service is healthy
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                 environment:
- *                   type: string
- *                   example: development
+ *                   example: backend
  */
 router.get('/health', healthController.check.bind(healthController));
 

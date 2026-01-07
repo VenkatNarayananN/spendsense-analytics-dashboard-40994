@@ -1,12 +1,18 @@
 class HealthService {
-    getStatus() {
-      return {
-        status: 'ok',
-        message: 'Service is healthy',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
-      };
-    }
+  /**
+   * PUBLIC_INTERFACE
+   * Returns a small, stable health payload for public probes.
+   *
+   * NOTE: Keep this payload minimal and non-sensitive since it is publicly accessible.
+   *
+   * @returns {{ ok: boolean, service: string }}
+   */
+  getStatus() {
+    return {
+      ok: true,
+      service: 'backend',
+    };
   }
-  
+}
+
 module.exports = new HealthService();

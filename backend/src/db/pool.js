@@ -32,7 +32,6 @@ async function _withTimeout(promise, timeoutMs) {
   })();
 
   try {
-    // eslint-disable-next-line no-undef
     return await Promise.race([promise, timeout]);
   } catch (err) {
     if (timedOut) {

@@ -6,6 +6,10 @@ const { requireSupabaseAuth } = require('../../middleware');
 const healthApiRoutes = require('./health');
 const fxApiRoutes = require('./fx');
 const dbApiRoutes = require('./db');
+const transactionsApiRoutes = require('./transactions');
+const alertsApiRoutes = require('./alerts');
+const analyticsApiRoutes = require('./analytics');
+const usersApiRoutes = require('./users');
 
 const router = express.Router();
 
@@ -22,8 +26,12 @@ router.use((req, res, next) => {
   return requireSupabaseAuth()(req, res, next);
 });
 
-// Protected API routes
+ // Protected API routes
 router.use('/', fxApiRoutes);
 router.use('/', dbApiRoutes);
+router.use('/', transactionsApiRoutes);
+router.use('/', analyticsApiRoutes);
+router.use('/', alertsApiRoutes);
+router.use('/', usersApiRoutes);
 
 module.exports = router;
